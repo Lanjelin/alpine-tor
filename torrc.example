@@ -1,0 +1,11 @@
+DataDirectory /home/tor/tor
+SocksPort 9050
+#ControlPort 9051
+#HashedControlPassword 16:872860B76453A77D60CA2BB8C1A7042072093276A3D701AD684053EC4C
+#CookieAuthentication 1
+
+ExitRelay 0
+
+HiddenServiceDir /home/tor/tor/hidden_service_v3/
+HiddenServiceVersion 3
+HiddenServicePort 80 192.168.101.101:80
