@@ -1,6 +1,6 @@
 FROM alpine:3.18.3 AS builder
 
-ARG TOR_VER=0.4.8.6
+ARG TOR_VER=0.4.8.7
 ARG TORGZ=https://dist.torproject.org/tor-$TOR_VER.tar.gz
 
 RUN \
