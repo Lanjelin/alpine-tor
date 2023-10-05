@@ -48,4 +48,7 @@ USER tor
 
 VOLUME /home/tor
 
+EXPOSE 9050
+EXPOSE 9051
+
 ENTRYPOINT ["tor", "-f", "/home/tor/torrc"]
