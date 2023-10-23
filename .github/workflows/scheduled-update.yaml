@@ -1,0 +1,86 @@
+name: Scheduled Update
+
+on:
+  schedule:
+    - cron: "0 3 * * 6"
+  push:
+    paths-ignore:
+      - "*.md"
+      - "*.yaml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check-releases:
+    runs-on: ubuntu-latest
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Check versions
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          EXT_RELEASE=$(wget -q -O- https://gitlab.torproject.org/tpo/core/tor/-/tags\?format\=atom | grep '<title>' | grep -oP '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.[0-9]{1,}(?=\<)' | sort -r | head -n1)
+          if [ -z "${EXT_RELEASE}" ]; then
+            echo "**** Can't retrieve external release, exiting ****"
+            exit 1
+          fi
+          IMAGE_VERSION=$(cat Dockerfile | grep 'TOR_VER=' | sed -E 's/.*=([^"]+).*/\1/');
+          if [ -z "${IMAGE_VERSION}" ]; then
+            echo "**** Can't retrieve last pushed version, exiting ****"
+            exit 1
+          fi
+          if [ "${EXT_RELEASE}" == "${IMAGE_VERSION}" ]; then
+            echo "**** Version ${EXT_RELEASE} already pushed, exiting ****"
+            exit 0
+          fi
+          PRS=$(gh pr list --repo ${{ github.repository }} --json title,author --jq "map(select(.title == \"Update to ${EXT_RELEASE}\" and .author.is_bot == true)) | length")
+          if ((PRS > 0)); then
+            echo "**** PR for Version ${EXT_RELEASE} open, exiting ****"
+            exit 0
+          fi
+          if wget -q --method=HEAD https://dist.torproject.org/tor-${EXT_RELEASE}.tar.gz; then
+            echo "**** New version ${EXT_RELEASE} found; old version was ${IMAGE_VERSION}. Triggering update ****"
+            sed -i "s/TOR_VER=${IMAGE_VERSION}/TOR_VER=${EXT_RELEASE}/g" Dockerfile
+            echo "update=true" >> "$GITHUB_OUTPUT"
+            echo "ext_release=${EXT_RELEASE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "**** New version ${EXT_RELEASE} found; URL invalid ****"
+            exit 1
+          fi
+          
+      - name: Commit Update
+        id: commit
+        if: 'steps.check.outputs.update'
+        run: |
+          git config --global user.name 'Lanjelin'
+          git config --global user.email '6988319+Lanjelin@users.noreply.github.com.'
+          git commit -am "Update to ${{ steps.check.outputs.ext_release }}"
+          git push
+
+      - name: Install Docker
+        id: dock
+        if: 'steps.check.outputs.update'
+        run: curl -fsSL https://get.docker.com | sh
+        
+      - name: Login to image repository
+        id: login
+        if: 'steps.check.outputs.update'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          
+      - name: Build and push
+        id: push
+        if: 'steps.check.outputs.update'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/lanjelin/alpine-tor:latest,ghcr.io/lanjelin/alpine-tor:${{ steps.check.outputs.ext_release }}
+          labels: maintainer=Lanjelin
