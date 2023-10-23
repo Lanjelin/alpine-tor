@@ -57,7 +57,7 @@ jobs:
         if: 'steps.check.outputs.update'
         run: |
           git config --global user.name '${{ secrets.REGISTRY_USER }}'
-          git config --global user.email '6988319+${{ secrets.REGISTRY_USER }}@users.noreply.github.com.'
+          git config --global user.email '6988319+${{ secrets.REGISTRY_USER }}@users.noreply.github.com'
           git commit -am "Update to ${{ steps.check.outputs.tag }}"
           git push
 
