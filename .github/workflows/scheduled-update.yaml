@@ -16,7 +16,7 @@ jobs:
       
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Check versions
         id: check
@@ -56,9 +56,10 @@ jobs:
         id: commit
         if: 'steps.check.outputs.update'
         run: |
-          git config --global user.name '${{ secrets.REGISTRY_USER }}'
-          git config --global user.email '6988319+${{ secrets.REGISTRY_USER }}@users.noreply.github.com'
-          git commit -am "Update to ${{ steps.check.outputs.tag }}"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update to ${{ steps.check.outputs.tag }}"
           git push
 
       - name: Install Docker
