@@ -2,7 +2,7 @@ name: Scheduled Update
 
 on:
   schedule:
-    - cron: "0 3 * * 6"
+    - cron: "0 3 * * *"
   push:
     paths-ignore:
       - "*.md"
