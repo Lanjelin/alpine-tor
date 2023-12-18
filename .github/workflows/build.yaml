@@ -1,0 +1,81 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  do-stuff-pretty-please:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check versions
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          EXT_RELEASE=$(wget -q -O- https://gitlab.torproject.org/tpo/core/tor/-/tags\?format\=atom | grep '<title>' | grep -oP '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.[0-9]{1,}(?=\<)' | sort -r | head -n1)
+          if [ -z "${EXT_RELEASE}" ]; then
+            echo "**** Can't retrieve external release, exiting ****"
+            exit 1
+          fi
+          IMAGE_VERSION=$(cat Dockerfile | grep 'TOR_VER=' | sed -E 's/.*=([^"]+).*/\1/');
+          if [ -z "${IMAGE_VERSION}" ]; then
+            echo "**** Can't retrieve last pushed version, exiting ****"
+            exit 1
+          fi
+          if [ "${EXT_RELEASE}" == "${IMAGE_VERSION}" ]; then
+            echo "**** Version ${EXT_RELEASE} already pushed. ****"
+            echo "tag=${EXT_RELEASE}" >> "$GITHUB_OUTPUT"
+          elif wget -q --method=HEAD https://dist.torproject.org/tor-${EXT_RELEASE}.tar.gz; then
+            echo "**** New version ${EXT_RELEASE} found; old version was ${IMAGE_VERSION}. Triggering update ****"
+            sed -i "s/TOR_VER=${IMAGE_VERSION}/TOR_VER=${EXT_RELEASE}/g" Dockerfile
+            echo "update=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${EXT_RELEASE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "**** New version ${EXT_RELEASE} found; URL invalid ****"
+            exit 1
+          fi
+
+      - name: Commit Update
+        id: commit
+        if: 'steps.check.outputs.update'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update to ${{ steps.check.outputs.tag }}"
+          git push
+
+      - name: Install Docker
+        id: dock
+        run: curl -fsSL https://get.docker.com | sh
+
+      - name: QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to image repository
+        id: login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
+          push: true
+          tags: |
+            ghcr.io/${{ secrets.REGISTRY_USER }}/alpine-tor:latest
+            ghcr.io/${{ secrets.REGISTRY_USER }}/alpine-tor:${{ steps.check.outputs.tag }}
+          labels: maintainer=${{ secrets.REGISTRY_USER }}
