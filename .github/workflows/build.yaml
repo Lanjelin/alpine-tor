@@ -54,11 +54,11 @@ jobs:
         run: curl -fsSL https://get.docker.com | sh
 
       - name: QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
 
       - name: Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to image repository
         id: login

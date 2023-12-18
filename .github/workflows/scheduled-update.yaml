@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-releases:
+  do-stuff-pretty-please:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,11 +35,6 @@ jobs:
           fi
           if [ "${EXT_RELEASE}" == "${IMAGE_VERSION}" ]; then
             echo "**** Version ${EXT_RELEASE} already pushed, exiting ****"
-            exit 0
-          fi
-          PRS=$(gh pr list --repo ${{ github.repository }} --json title,author --jq "map(select(.title == \"Update to ${EXT_RELEASE}\" and .author.is_bot == true)) | length")
-          if ((PRS > 0)); then
-            echo "**** PR for Version ${EXT_RELEASE} open, exiting ****"
             exit 0
           fi
           if wget -q --method=HEAD https://dist.torproject.org/tor-${EXT_RELEASE}.tar.gz; then
@@ -69,12 +64,12 @@ jobs:
 
       - name: QEMU
         if: 'steps.check.outputs.update'
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
 
       - name: Buildx
         id: buildx
         if: 'steps.check.outputs.update'
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to image repository
         id: login
