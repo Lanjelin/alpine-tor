@@ -62,15 +62,6 @@ jobs:
         if: 'steps.check.outputs.update'
         run: curl -fsSL https://get.docker.com | sh
 
-      - name: QEMU
-        if: 'steps.check.outputs.update'
-        uses: docker/setup-qemu-action@v3
-
-      - name: Buildx
-        id: buildx
-        if: 'steps.check.outputs.update'
-        uses: docker/setup-buildx-action@v3
-
       - name: Login to image repository
         id: login
         if: 'steps.check.outputs.update'
@@ -86,7 +77,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
           push: true
           tags: |
             ghcr.io/${{ secrets.REGISTRY_USER }}/alpine-tor:latest
