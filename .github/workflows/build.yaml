@@ -1,13 +1,6 @@
-name: Scheduled Update
+name: Build
 
 on:
-  schedule:
-    - cron: "0 3 * * *"
-  push:
-    paths-ignore:
-      - "**.md"
-      - "**.yaml"
-  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -34,10 +27,9 @@ jobs:
             exit 1
           fi
           if [ "${EXT_RELEASE}" == "${IMAGE_VERSION}" ]; then
-            echo "**** Version ${EXT_RELEASE} already pushed, exiting ****"
-            exit 0
-          fi
-          if wget -q --method=HEAD https://dist.torproject.org/tor-${EXT_RELEASE}.tar.gz; then
+            echo "**** Version ${EXT_RELEASE} already pushed. ****"
+            echo "tag=${EXT_RELEASE}" >> "$GITHUB_OUTPUT"
+          elif wget -q --method=HEAD https://dist.torproject.org/tor-${EXT_RELEASE}.tar.gz; then
             echo "**** New version ${EXT_RELEASE} found; old version was ${IMAGE_VERSION}. Triggering update ****"
             sed -i "s/TOR_VER=${IMAGE_VERSION}/TOR_VER=${EXT_RELEASE}/g" Dockerfile
             echo "update=true" >> "$GITHUB_OUTPUT"
@@ -58,17 +50,14 @@ jobs:
           git push
 
       - name: QEMU
-        if: 'steps.check.outputs.update'
         uses: docker/setup-qemu-action@v3
 
       - name: Buildx
         id: buildx
-        if: 'steps.check.outputs.update'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to image repository
         id: login
-        if: 'steps.check.outputs.update'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -77,7 +66,6 @@ jobs:
 
       - name: Build and push
         id: push
-        if: 'steps.check.outputs.update'
         uses: docker/build-push-action@v4
         with:
           context: .
