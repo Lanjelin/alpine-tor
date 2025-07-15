@@ -12,7 +12,8 @@ RUN \
     zlib \
     zlib-dev \
     openssl \
-    openssl-dev && \
+    openssl-dev \
+    libcap-dev && \
   wget $TORGZ.sha256sum.asc && wget $TORGZ.sha256sum && wget $TORGZ && \
   gpg --keyserver keys.openpgp.org --recv-keys \
     514102454D0A87DB0767A1EBBE6A0531C18A9179 \
@@ -37,7 +38,8 @@ RUN \
     zlib \
     zlib-dev \
     openssl \
-    openssl-dev && \
+    openssl-dev \
+    libcap-dev && \
   adduser -s /bin/bash -D -u 99 tor && \
   mkdir -p /var/run/tor && chown -R tor:tor /var/run/tor && chmod 2700 /var/run/tor && \
   mkdir -p /home/tor/tor && chown -R tor:tor /home/tor/tor  && chmod 2700 /home/tor/tor
