@@ -23,7 +23,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
-          EXT_RELEASE=$(wget -q -O- https://gitlab.torproject.org/tpo/core/tor/-/tags\?format\=atom | grep '<title>' | grep -oP '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.[0-9]{1,}(?=\<)' | sort -r | head -n1)
+          EXT_RELEASE=$(wget -q -O- https://gitlab.torproject.org/tpo/core/tor/-/tags?format=atom | grep -oP '(?<=<title>tor-)\d+(\.\d+)*(?=</title>)' | sort -V -r | head -n1)
           if [ -z "${EXT_RELEASE}" ]; then
             echo "**** Can't retrieve external release, exiting ****"
             exit 1
