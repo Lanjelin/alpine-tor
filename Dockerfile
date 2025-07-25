@@ -47,10 +47,10 @@ RUN \
     libcap-dev \
     xz-dev \
     zstd-dev && \
-  addgroup -g "$GID" tor && \
-  adduser -D -s /bin/bash -u "$UID" -G tor tor && \
-  mkdir -p /var/run/tor && chown -R tor:tor /var/run/tor && chmod 2700 /var/run/tor && \
-  mkdir -p /home/tor/tor && chown -R tor:tor /home/tor/tor  && chmod 2700 /home/tor/tor
+  getent group "$GID" || addgroup -g "$GID" tor && \
+  adduser -D -s /bin/bash -u "$UID" -G "$(getent group $GID | cut -d: -f1)" tor && \
+  mkdir -p /var/run/tor && chown -R $UID:$GID /var/run/tor && chmod 2700 /var/run/tor && \
+  mkdir -p /home/tor/tor && chown -R $UID:$GID /home/tor/tor  && chmod 2700 /home/tor/tor
 
 COPY --from=builder /usr/local/ /usr/local/
 
