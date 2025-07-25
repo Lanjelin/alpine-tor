@@ -30,6 +30,9 @@ RUN \
 
 FROM alpine:3.18.3
 
+ARG UID=99
+ARG GID=100
+
 RUN \
   apk --no-cache add --update \
     bash \
@@ -40,7 +43,8 @@ RUN \
     openssl \
     openssl-dev \
     libcap-dev && \
-  adduser -s /bin/bash -D -u 99 tor && \
+  addgroup -g "$GID" tor && \
+  adduser -D -s /bin/bash -u "$UID" -G tor tor && \
   mkdir -p /var/run/tor && chown -R tor:tor /var/run/tor && chmod 2700 /var/run/tor && \
   mkdir -p /home/tor/tor && chown -R tor:tor /home/tor/tor  && chmod 2700 /home/tor/tor
 
