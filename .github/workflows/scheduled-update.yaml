@@ -23,7 +23,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
-          EXT_RELEASE=$(wget -q -O- https://gitlab.torproject.org/tpo/core/tor/-/tags?format=atom | grep -oP '(?<=<title>tor-)\d+(\.\d+)*(?=</title>)' | sort -V -r | head -n1)
+          EXT_RELEASE=$(
+            curl -fsSL 'https://gitlab.torproject.org/api/v4/projects/tpo%2Fcore%2Ftor/repository/tags?per_page=100' |
+            jq -r '.[].name | select(test("^tor-[0-9]+(\\.[0-9]+)*$")) | sub("^tor-"; "")' |
+            sort -V -r |
+            head -n1
+          )
           if [ -z "${EXT_RELEASE}" ]; then
             echo "**** Can't retrieve external release, exiting ****"
             exit 1
@@ -49,7 +54,7 @@ jobs:
 
       - name: Commit Update
         id: commit
-        if: 'steps.check.outputs.update'
+        if: "steps.check.outputs.update"
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -58,17 +63,17 @@ jobs:
           git push
 
       - name: QEMU
-        if: 'steps.check.outputs.update'
+        if: "steps.check.outputs.update"
         uses: docker/setup-qemu-action@v3
 
       - name: Buildx
         id: buildx
-        if: 'steps.check.outputs.update'
+        if: "steps.check.outputs.update"
         uses: docker/setup-buildx-action@v3
 
       - name: Login to image repository
         id: login
-        if: 'steps.check.outputs.update'
+        if: "steps.check.outputs.update"
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -77,7 +82,7 @@ jobs:
 
       - name: Build and push
         id: push
-        if: 'steps.check.outputs.update'
+        if: "steps.check.outputs.update"
         uses: docker/build-push-action@v4
         with:
           context: .
